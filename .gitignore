@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Unused files left by the initial Vite scaffold.
+public/
+src/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
