@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="TRY/JPYのスワップ収益、為替下落による評価損益、複利買い増しを日単位で概算できるトルコリラ円スワップ運用シミュレーターです。"
+      content="TRY/JPYのスワップ収益、為替下落による評価損益、スプレッド費用、日次複利の買い増しを概算できるトルコリラ円スワップ運用シミュレーターです。"
     />
     <title>トルコリラ円スワップ運用シミュレーター</title>
     <style>
@@ -18,10 +18,9 @@
         --muted: #5c687d;
         --line: #d9e1ec;
         --accent: #0f766e;
-        --accent-2: #2563eb;
-        --warn: #b45309;
         --profit: #c2410c;
         --loss: #1d4ed8;
+        --fee: #7c3aed;
         --total: #0f766e;
         --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
       }
@@ -46,8 +45,7 @@
       }
 
       button,
-      input,
-      select {
+      input {
         font: inherit;
       }
 
@@ -82,7 +80,7 @@
       }
 
       .lead {
-        max-width: 780px;
+        max-width: 820px;
         margin: 0;
         color: var(--muted);
         font-size: 1.05rem;
@@ -98,7 +96,7 @@
       .panel {
         border: 1px solid var(--line);
         border-radius: 8px;
-        background: rgba(255, 255, 255, 0.92);
+        background: rgba(255, 255, 255, 0.94);
         box-shadow: var(--shadow);
       }
 
@@ -109,9 +107,6 @@
       }
 
       .panel-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
         margin: 0 0 16px;
         font-size: 1.15rem;
       }
@@ -129,8 +124,7 @@
         font-weight: 700;
       }
 
-      input,
-      select {
+      input {
         width: 100%;
         border: 1px solid #cbd5e1;
         border-radius: 8px;
@@ -140,8 +134,7 @@
         outline: none;
       }
 
-      input:focus,
-      select:focus {
+      input:focus {
         border-color: var(--accent);
         box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
       }
@@ -162,7 +155,8 @@
         font-weight: 800;
       }
 
-      .switch-row small {
+      .switch-row small,
+      .help {
         color: var(--muted);
       }
 
@@ -178,7 +172,7 @@
 
       .cards {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         gap: 12px;
       }
 
@@ -197,7 +191,7 @@
       }
 
       .value {
-        font-size: clamp(1.25rem, 2vw, 1.7rem);
+        font-size: clamp(1.14rem, 1.7vw, 1.55rem);
         font-weight: 900;
         line-height: 1.2;
       }
@@ -208,6 +202,10 @@
 
       .loss {
         color: var(--loss);
+      }
+
+      .fee {
+        color: var(--fee);
       }
 
       .neutral {
@@ -233,10 +231,10 @@
       .legend i {
         display: inline-block;
         width: 22px;
-        height: 3px;
+        height: 10px;
         margin-right: 6px;
         vertical-align: middle;
-        border-radius: 999px;
+        border-radius: 3px;
       }
 
       .chart-wrap {
@@ -249,7 +247,7 @@
       svg {
         display: block;
         width: 100%;
-        min-height: 340px;
+        min-height: 360px;
       }
 
       .table-wrap {
@@ -258,7 +256,7 @@
 
       table {
         width: 100%;
-        min-width: 760px;
+        min-width: 920px;
         border-collapse: collapse;
       }
 
@@ -296,6 +294,12 @@
         font-size: 0.9rem;
       }
 
+      @media (max-width: 1080px) {
+        .cards {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
       @media (max-width: 900px) {
         .layout,
         .cards {
@@ -311,11 +315,11 @@
   <body>
     <main class="page">
       <header>
-        <div class="eyebrow">TRY/JPY専用・日次複利対応</div>
+        <div class="eyebrow">TRY/JPY専用・スプレッド費用・日次複利対応</div>
         <h1>トルコリラ円スワップ運用シミュレーター</h1>
         <p class="lead">
-          TRY/JPYを保有した場合のスワップ損益、為替下落による評価損益、合計損益を概算します。
-          複利モードでは、毎日のスワップ収益を証拠金に加え、設定したレバレッジに合わせてTRY/JPYを買い増します。
+          TRY/JPYを保有した場合のスワップ損益、為替下落による評価損益、スプレッド費用、合計損益を概算します。
+          複利モードでは、毎日のスワップ収益からスプレッド費用を考慮した証拠金余力に対して、設定レバレッジまで買い増します。
         </p>
       </header>
 
@@ -340,12 +344,17 @@
               <input id="swap" type="number" step="0.1" value="25" />
             </label>
             <label>
+              スプレッド（pips）
+              <input id="spreadPips" type="number" min="0" step="0.1" value="1.4" />
+              <span class="help">0.1pipsあたり1万通貨で100円の費用として計算</span>
+            </label>
+            <label>
               年間の為替下落率（%）
-              <input id="rateDrop" type="number" min="0" max="99" step="0.1" value="20" />
+              <input id="rateDrop" type="number" min="0" max="99" step="0.1" value="15" />
             </label>
             <label>
               年間のスワップ低下率（%）
-              <input id="swapDrop" type="number" min="0" max="99" step="0.1" value="20" />
+              <input id="swapDrop" type="number" min="0" max="99" step="0.1" value="15" />
             </label>
             <label>
               シミュレーション期間（年）
@@ -354,7 +363,7 @@
             <label class="switch-row">
               <span>
                 日次複利で買い増す
-                <small>毎日のスワップ収益を証拠金に加え、レバレッジ上限まで買い増します。</small>
+                <small>毎日のスワップ収益を証拠金に加え、スプレッド費用を差し引いた上で買い増します。</small>
               </span>
               <input id="compound" type="checkbox" checked />
             </label>
@@ -372,6 +381,10 @@
               <div class="value profit" id="finalSwap">-</div>
             </article>
             <article class="card">
+              <small>スプレッド費用</small>
+              <div class="value fee" id="finalSpread">-</div>
+            </article>
+            <article class="card">
               <small>評価損益</small>
               <div class="value" id="finalValuation">-</div>
             </article>
@@ -384,12 +397,12 @@
           <section class="panel chart-panel">
             <h2 class="panel-title">損益グラフ</h2>
             <p class="legend">
-              <span><i style="background: var(--loss)"></i>評価損益</span>
-              <span><i style="background: var(--profit)"></i>スワップ損益</span>
-              <span><i style="background: var(--total)"></i>合計損益</span>
+              <span><i style="background: rgba(29, 78, 216, 0.32)"></i>評価損益</span>
+              <span><i style="background: rgba(194, 65, 12, 0.32)"></i>スワップ損益</span>
+              <span><i style="background: rgba(15, 118, 110, 0.38)"></i>合計損益</span>
             </p>
             <div class="chart-wrap">
-              <svg id="chart" role="img" aria-label="評価損益、スワップ損益、合計損益の推移グラフ"></svg>
+              <svg id="chart" role="img" aria-label="評価損益、スワップ損益、合計損益の山形グラフ"></svg>
             </div>
           </section>
 
@@ -404,6 +417,7 @@
                     <th>保有数量</th>
                     <th>1日スワップ</th>
                     <th>累計スワップ</th>
+                    <th>スプレッド費用</th>
                     <th>評価損益</th>
                     <th>合計損益</th>
                   </tr>
@@ -414,29 +428,39 @@
           </section>
 
           <section class="panel text-panel">
-            <h2 class="panel-title">計算方法</h2>
+            <h2 class="panel-title">計算方法と前提</h2>
             <ul class="note-list">
-              <li>TRY/JPYは、入力した年間下落率を日割りにして毎日下がる前提で計算しています。</li>
-              <li>スワップポイントも、入力した年間低下率を日割りにして毎日変化する前提です。</li>
-              <li>複利モードでは、毎日のスワップ収益を証拠金に追加し、入金額と累計スワップに対して設定レバレッジまで買い増します。</li>
-              <li>評価損益は、買付時の平均取得コストと現在評価額の差で計算しています。</li>
-              <li>税金、スプレッド、ロスカット、証拠金維持率、FX会社ごとのスワップ変更ルールは含めていません。</li>
+              <li>レバレッジは「入金額に対して持てる最大ポジション量」を決めるために使います。損益そのものを直接10倍にする計算ではありません。</li>
+              <li>スワップポイントは、保有数量1万通貨あたり1日いくら受け取るかで計算します。</li>
+              <li>複利モードでは、毎日のスワップ損益を証拠金に追加し、累計スプレッド費用を差し引いた範囲で、レバレッジ上限まで日単位で買い増します。</li>
+              <li>スプレッド費用は、初回購入と買い増しのたびに発生するものとして計算します。ここでは指定どおり、0.1pipsあたり1万通貨で100円の費用にしています。</li>
+              <li>為替下落率とスワップ低下率は、1年かけて一次関数的に減少する前提です。毎年の開始値から、その年の終了値までを直線で結んで毎日少しずつ下げます。</li>
+              <li>税金、ロスカット、証拠金維持率、追加入金、スワップ課税、FX会社ごとの細かいルールは含めていません。</li>
             </ul>
           </section>
         </section>
       </div>
 
-      <footer>
-        このシミュレーターは概算用です。投資判断を保証するものではありません。
-      </footer>
+      <footer>このシミュレーターは概算用です。投資判断を保証するものではありません。</footer>
     </main>
 
     <script>
-      const ids = ["deposit", "leverage", "rate", "swap", "rateDrop", "swapDrop", "years", "compound"];
+      const ids = [
+        "deposit",
+        "leverage",
+        "rate",
+        "swap",
+        "spreadPips",
+        "rateDrop",
+        "swapDrop",
+        "years",
+        "compound",
+      ];
       const inputs = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
       const outputs = {
         finalQty: document.getElementById("finalQty"),
         finalSwap: document.getElementById("finalSwap"),
+        finalSpread: document.getElementById("finalSpread"),
         finalValuation: document.getElementById("finalValuation"),
         finalTotal: document.getElementById("finalTotal"),
         yearRows: document.getElementById("yearRows"),
@@ -449,7 +473,10 @@
         maximumFractionDigits: 0,
       });
       const number = new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 0 });
-      const rateFmt = new Intl.NumberFormat("ja-JP", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+      const rateFmt = new Intl.NumberFormat("ja-JP", {
+        minimumFractionDigits: 3,
+        maximumFractionDigits: 3,
+      });
 
       function asNumber(input, fallback) {
         const value = Number(input.value);
@@ -462,46 +489,75 @@
         return "neutral";
       }
 
+      function calculateMaxQuantity(equityBeforeNewSpread, currentQuantity, rate, leverage, spreadCostPerUnit) {
+        const denominator = rate / leverage + spreadCostPerUnit;
+        if (denominator <= 0) return 0;
+        return Math.max(0, (equityBeforeNewSpread + currentQuantity * spreadCostPerUnit) / denominator);
+      }
+
       function simulate() {
         const deposit = Math.max(1, asNumber(inputs.deposit, 500000));
         const leverage = Math.max(1, asNumber(inputs.leverage, 10));
         const initialRate = Math.max(0.001, asNumber(inputs.rate, 3.447));
         const initialSwap = asNumber(inputs.swap, 25);
-        const rateDrop = Math.min(99, Math.max(0, asNumber(inputs.rateDrop, 20))) / 100;
-        const swapDrop = Math.min(99, Math.max(0, asNumber(inputs.swapDrop, 20))) / 100;
+        const spreadPips = Math.max(0, asNumber(inputs.spreadPips, 1.4));
+        const rateDrop = Math.min(99, Math.max(0, asNumber(inputs.rateDrop, 15))) / 100;
+        const swapDrop = Math.min(99, Math.max(0, asNumber(inputs.swapDrop, 15))) / 100;
         const years = Math.min(30, Math.max(1, Math.round(asNumber(inputs.years, 5))));
         const compound = inputs.compound.checked;
         const days = years * 365;
-        const dailyRateFactor = Math.pow(1 - rateDrop, 1 / 365);
-        const dailySwapFactor = Math.pow(1 - swapDrop, 1 / 365);
+        const spreadCostPer10k = (spreadPips / 0.1) * 100;
+        const spreadCostPerUnit = spreadCostPer10k / 10000;
 
         let rate = initialRate;
         let dailySwapPoint = initialSwap;
-        let quantity = (deposit * leverage) / initialRate;
-        let totalCost = quantity * initialRate;
         let cumulativeSwap = 0;
+        let cumulativeSpread = 0;
+        let quantity = calculateMaxQuantity(deposit, 0, initialRate, leverage, spreadCostPerUnit);
+        let totalCost = quantity * initialRate;
+        cumulativeSpread += quantity * spreadCostPerUnit;
+        let yearStartRate = initialRate;
+        let yearStartSwapPoint = initialSwap;
+        let dailyRateDecrease = (yearStartRate * rateDrop) / 365;
+        let dailySwapDecrease = (yearStartSwapPoint * swapDrop) / 365;
+
         const series = [];
         const snapshots = [];
 
         for (let day = 1; day <= days; day += 1) {
-          rate *= dailyRateFactor;
-          dailySwapPoint *= dailySwapFactor;
+          if (day > 1 && (day - 1) % 365 === 0) {
+            yearStartRate = rate;
+            yearStartSwapPoint = dailySwapPoint;
+            dailyRateDecrease = (yearStartRate * rateDrop) / 365;
+            dailySwapDecrease = (yearStartSwapPoint * swapDrop) / 365;
+          }
+
+          rate = Math.max(0.001, rate - dailyRateDecrease);
+          dailySwapPoint -= dailySwapDecrease;
 
           const dailySwap = (quantity / 10000) * dailySwapPoint;
           cumulativeSwap += dailySwap;
 
-          if (compound && cumulativeSwap > 0) {
-            const targetQuantity = ((deposit + cumulativeSwap) * leverage) / rate;
+          if (compound) {
+            const equityBeforeNewSpread = deposit + cumulativeSwap - cumulativeSpread;
+            const targetQuantity = calculateMaxQuantity(
+              equityBeforeNewSpread,
+              quantity,
+              rate,
+              leverage,
+              spreadCostPerUnit,
+            );
             if (targetQuantity > quantity) {
               const addedQuantity = targetQuantity - quantity;
               quantity = targetQuantity;
               totalCost += addedQuantity * rate;
+              cumulativeSpread += addedQuantity * spreadCostPerUnit;
             }
           }
 
           const marketValue = quantity * rate;
           const valuation = marketValue - totalCost;
-          const total = cumulativeSwap + valuation;
+          const total = cumulativeSwap + valuation - cumulativeSpread;
           const point = {
             day,
             year: day / 365,
@@ -509,6 +565,7 @@
             dailySwapPoint,
             quantity,
             cumulativeSwap,
+            cumulativeSpread,
             valuation,
             total,
           };
@@ -521,8 +578,8 @@
 
       function drawChart(series) {
         const width = 940;
-        const height = 340;
-        const pad = { top: 24, right: 24, bottom: 42, left: 78 };
+        const height = 360;
+        const pad = { top: 24, right: 24, bottom: 44, left: 78 };
         const values = series.flatMap((p) => [p.valuation, p.cumulativeSwap, p.total]);
         let min = Math.min(0, ...values);
         let max = Math.max(0, ...values);
@@ -536,8 +593,18 @@
 
         const x = (year) => pad.left + (year / series[series.length - 1].year) * (width - pad.left - pad.right);
         const y = (value) => pad.top + ((max - value) / (max - min)) * (height - pad.top - pad.bottom);
-        const path = (key) => series.map((p, i) => `${i === 0 ? "M" : "L"} ${x(p.year).toFixed(1)} ${y(p[key]).toFixed(1)}`).join(" ");
         const zeroY = y(0);
+        const linePath = (key) =>
+          series.map((p, i) => `${i === 0 ? "M" : "L"} ${x(p.year).toFixed(1)} ${y(p[key]).toFixed(1)}`).join(" ");
+        const areaPath = (key) => {
+          const first = series[0];
+          const last = series[series.length - 1];
+          return [
+            `M ${x(first.year).toFixed(1)} ${zeroY.toFixed(1)}`,
+            linePath(key).replace("M", "L"),
+            `L ${x(last.year).toFixed(1)} ${zeroY.toFixed(1)} Z`,
+          ].join(" ");
+        };
         const grid = [0, 0.25, 0.5, 0.75, 1]
           .map((t) => {
             const gy = pad.top + t * (height - pad.top - pad.bottom);
@@ -547,7 +614,12 @@
           .join("");
         const yearMarks = series
           .filter((p) => p.day % 365 === 0)
-          .map((p) => `<text x="${x(p.year)}" y="${height - 12}" text-anchor="middle" fill="#64748b" font-size="13">${Math.round(p.year)}年</text>`)
+          .map(
+            (p) =>
+              `<text x="${x(p.year)}" y="${height - 12}" text-anchor="middle" fill="#64748b" font-size="13">${Math.round(
+                p.year,
+              )}年</text>`,
+          )
           .join("");
 
         outputs.chart.setAttribute("viewBox", `0 0 ${width} ${height}`);
@@ -556,9 +628,9 @@
           ${grid}
           <line x1="${pad.left}" y1="${zeroY}" x2="${width - pad.right}" y2="${zeroY}" stroke="#94a3b8" stroke-dasharray="5 5"/>
           ${yearMarks}
-          <path d="${path("valuation")}" fill="none" stroke="#1d4ed8" stroke-width="3"/>
-          <path d="${path("cumulativeSwap")}" fill="none" stroke="#c2410c" stroke-width="3"/>
-          <path d="${path("total")}" fill="none" stroke="#0f766e" stroke-width="4"/>
+          <path d="${areaPath("valuation")}" fill="rgba(29, 78, 216, 0.18)" stroke="#1d4ed8" stroke-width="2.5"/>
+          <path d="${areaPath("cumulativeSwap")}" fill="rgba(194, 65, 12, 0.18)" stroke="#c2410c" stroke-width="2.5"/>
+          <path d="${areaPath("total")}" fill="rgba(15, 118, 110, 0.22)" stroke="#0f766e" stroke-width="3.5"/>
         `;
       }
 
@@ -568,6 +640,7 @@
 
         outputs.finalQty.textContent = `${number.format(last.quantity)} TRY`;
         outputs.finalSwap.textContent = yen.format(last.cumulativeSwap);
+        outputs.finalSpread.textContent = yen.format(-last.cumulativeSpread);
         outputs.finalValuation.textContent = yen.format(last.valuation);
         outputs.finalValuation.className = `value ${classFor(last.valuation)}`;
         outputs.finalTotal.textContent = yen.format(last.total);
@@ -582,6 +655,7 @@
                 <td>${number.format(p.quantity)} TRY</td>
                 <td>${yen.format((p.quantity / 10000) * p.dailySwapPoint)}</td>
                 <td class="profit">${yen.format(p.cumulativeSwap)}</td>
+                <td class="fee">${yen.format(-p.cumulativeSpread)}</td>
                 <td class="${classFor(p.valuation)}">${yen.format(p.valuation)}</td>
                 <td class="${classFor(p.total)}">${yen.format(p.total)}</td>
               </tr>
