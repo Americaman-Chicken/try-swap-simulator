@@ -172,7 +172,7 @@
 
       .cards {
         display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-columns: repeat(6, minmax(0, 1fr));
         gap: 12px;
       }
 
@@ -319,7 +319,7 @@
         <h1>トルコリラ円スワップ運用シミュレーター</h1>
         <p class="lead">
           TRY/JPYを保有した場合のスワップ損益、為替下落による評価損益、スプレッド費用、合計損益を概算します。
-          複利モードでは、毎日のスワップ収益からスプレッド費用を考慮した証拠金余力に対して、設定レバレッジまで買い増します。
+          複利モードでは、毎日のスワップ収益、評価損益、スプレッド費用を反映した実質証拠金に対して、設定レバレッジまで買い増します。
         </p>
       </header>
 
@@ -377,6 +377,10 @@
               <div class="value" id="finalQty">-</div>
             </article>
             <article class="card">
+              <small>実効レバレッジ</small>
+              <div class="value" id="finalEffectiveLeverage">-</div>
+            </article>
+            <article class="card">
               <small>スワップ損益</small>
               <div class="value profit" id="finalSwap">-</div>
             </article>
@@ -415,6 +419,7 @@
                     <th>年</th>
                     <th>TRY/JPY</th>
                     <th>保有数量</th>
+                    <th>実効レバレッジ</th>
                     <th>1日スワップ</th>
                     <th>累計スワップ</th>
                     <th>スプレッド費用</th>
@@ -432,7 +437,7 @@
             <ul class="note-list">
               <li>レバレッジは「入金額に対して持てる最大ポジション量」を決めるために使います。損益そのものを直接10倍にする計算ではありません。</li>
               <li>スワップポイントは、保有数量1万通貨あたり1日いくら受け取るかで計算します。</li>
-              <li>複利モードでは、毎日のスワップ損益を証拠金に追加し、累計スプレッド費用を差し引いた範囲で、レバレッジ上限まで日単位で買い増します。</li>
+              <li>複利モードでは、毎日のスワップ損益を証拠金に追加し、評価損益と累計スプレッド費用も反映した実質証拠金の範囲で、レバレッジ上限まで日単位で買い増します。</li>
               <li>スプレッド費用は、初回購入と買い増しのたびに発生するものとして計算します。ここでは指定どおり、0.1pipsあたり1万通貨で100円の費用にしています。</li>
               <li>為替下落率とスワップ低下率は、1年かけて一次関数的に減少する前提です。毎年の開始値から、その年の終了値までを直線で結んで毎日少しずつ下げます。</li>
               <li>税金、ロスカット、証拠金維持率、追加入金、スワップ課税、FX会社ごとの細かいルールは含めていません。</li>
@@ -459,6 +464,7 @@
       const inputs = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
       const outputs = {
         finalQty: document.getElementById("finalQty"),
+        finalEffectiveLeverage: document.getElementById("finalEffectiveLeverage"),
         finalSwap: document.getElementById("finalSwap"),
         finalSpread: document.getElementById("finalSpread"),
         finalValuation: document.getElementById("finalValuation"),
@@ -516,6 +522,7 @@
         let quantity = calculateMaxQuantity(deposit, 0, initialRate, leverage, spreadCostPerUnit);
         let totalCost = quantity * initialRate;
         cumulativeSpread += quantity * spreadCostPerUnit;
+        let valuation = quantity * initialRate - totalCost;
         let yearStartRate = initialRate;
         let yearStartSwapPoint = initialSwap;
         let dailyRateDecrease = (yearStartRate * rateDrop) / 365;
@@ -538,8 +545,11 @@
           const dailySwap = (quantity / 10000) * dailySwapPoint;
           cumulativeSwap += dailySwap;
 
+          const marketValueBeforeAdding = quantity * rate;
+          valuation = marketValueBeforeAdding - totalCost;
+
           if (compound) {
-            const equityBeforeNewSpread = deposit + cumulativeSwap - cumulativeSpread;
+            const equityBeforeNewSpread = deposit + cumulativeSwap + valuation - cumulativeSpread;
             const targetQuantity = calculateMaxQuantity(
               equityBeforeNewSpread,
               quantity,
@@ -556,7 +566,9 @@
           }
 
           const marketValue = quantity * rate;
-          const valuation = marketValue - totalCost;
+          valuation = marketValue - totalCost;
+          const effectiveEquity = deposit + cumulativeSwap + valuation - cumulativeSpread;
+          const effectiveLeverage = effectiveEquity > 0 ? marketValue / effectiveEquity : Infinity;
           const total = cumulativeSwap + valuation - cumulativeSpread;
           const point = {
             day,
@@ -567,6 +579,8 @@
             cumulativeSwap,
             cumulativeSpread,
             valuation,
+            effectiveEquity,
+            effectiveLeverage,
             total,
           };
           series.push(point);
@@ -639,6 +653,9 @@
         const last = series[series.length - 1];
 
         outputs.finalQty.textContent = `${number.format(last.quantity)} TRY`;
+        outputs.finalEffectiveLeverage.textContent = Number.isFinite(last.effectiveLeverage)
+          ? `${last.effectiveLeverage.toFixed(2)}倍`
+          : "維持不可";
         outputs.finalSwap.textContent = yen.format(last.cumulativeSwap);
         outputs.finalSpread.textContent = yen.format(-last.cumulativeSpread);
         outputs.finalValuation.textContent = yen.format(last.valuation);
@@ -653,6 +670,7 @@
                 <td>${index + 1}年目</td>
                 <td>${rateFmt.format(p.rate)}</td>
                 <td>${number.format(p.quantity)} TRY</td>
+                <td>${Number.isFinite(p.effectiveLeverage) ? `${p.effectiveLeverage.toFixed(2)}倍` : "維持不可"}</td>
                 <td>${yen.format((p.quantity / 10000) * p.dailySwapPoint)}</td>
                 <td class="profit">${yen.format(p.cumulativeSwap)}</td>
                 <td class="fee">${yen.format(-p.cumulativeSpread)}</td>
