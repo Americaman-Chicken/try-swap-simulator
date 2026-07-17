@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="TRY/JPYのスワップ収益、為替下落による評価損益、複利買い増しを日単位で概算できるトルコリラ円スワップ運用シミュレーターです。"
+    />
+    <title>トルコリラ円スワップ運用シミュレーター</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f7fb;
+        --panel: #ffffff;
+        --panel-soft: #eef3f8;
+        --text: #172033;
+        --muted: #5c687d;
+        --line: #d9e1ec;
+        --accent: #0f766e;
+        --accent-2: #2563eb;
+        --warn: #b45309;
+        --profit: #c2410c;
+        --loss: #1d4ed8;
+        --total: #0f766e;
+        --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 34rem),
+          linear-gradient(180deg, #ffffff 0%, var(--bg) 28rem);
+        color: var(--text);
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        line-height: 1.7;
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      .page {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 32px 0 56px;
+      }
+
+      header {
+        display: grid;
+        gap: 18px;
+        margin-bottom: 24px;
+      }
+
+      .eyebrow {
+        width: fit-content;
+        border: 1px solid rgba(15, 118, 110, 0.24);
+        border-radius: 999px;
+        padding: 4px 12px;
+        background: rgba(15, 118, 110, 0.08);
+        color: var(--accent);
+        font-size: 0.9rem;
+        font-weight: 700;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 5vw, 4.2rem);
+        line-height: 1.12;
+        letter-spacing: 0;
+      }
+
+      .lead {
+        max-width: 780px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 1.05rem;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(280px, 380px) 1fr;
+        gap: 20px;
+        align-items: start;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: var(--shadow);
+      }
+
+      .inputs {
+        position: sticky;
+        top: 16px;
+        padding: 20px;
+      }
+
+      .panel-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 16px;
+        font-size: 1.15rem;
+      }
+
+      .field-grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        font-weight: 700;
+      }
+
+      input,
+      select {
+        width: 100%;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 11px 12px;
+        background: #fff;
+        color: var(--text);
+        outline: none;
+      }
+
+      input:focus,
+      select:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+      }
+
+      .switch-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        background: var(--panel-soft);
+      }
+
+      .switch-row span {
+        color: var(--text);
+        font-weight: 800;
+      }
+
+      .switch-row small {
+        color: var(--muted);
+      }
+
+      .switch-row input {
+        width: 22px;
+        height: 22px;
+      }
+
+      .main {
+        display: grid;
+        gap: 20px;
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 16px;
+        background: var(--panel);
+      }
+
+      .card small {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .value {
+        font-size: clamp(1.25rem, 2vw, 1.7rem);
+        font-weight: 900;
+        line-height: 1.2;
+      }
+
+      .profit {
+        color: var(--profit);
+      }
+
+      .loss {
+        color: var(--loss);
+      }
+
+      .neutral {
+        color: var(--total);
+      }
+
+      .chart-panel,
+      .table-panel,
+      .text-panel {
+        padding: 20px;
+      }
+
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        font-weight: 700;
+      }
+
+      .legend i {
+        display: inline-block;
+        width: 22px;
+        height: 3px;
+        margin-right: 6px;
+        vertical-align: middle;
+        border-radius: 999px;
+      }
+
+      .chart-wrap {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: linear-gradient(180deg, #ffffff, #f8fafc);
+      }
+
+      svg {
+        display: block;
+        width: 100%;
+        min-height: 340px;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+      }
+
+      table {
+        width: 100%;
+        min-width: 760px;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 11px 10px;
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      th:first-child,
+      td:first-child {
+        text-align: left;
+      }
+
+      th {
+        color: var(--muted);
+        font-size: 0.86rem;
+      }
+
+      .note-list {
+        margin: 0;
+        padding-left: 1.2rem;
+        color: var(--muted);
+      }
+
+      .note-list li + li {
+        margin-top: 6px;
+      }
+
+      footer {
+        margin-top: 24px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      @media (max-width: 900px) {
+        .layout,
+        .cards {
+          grid-template-columns: 1fr;
+        }
+
+        .inputs {
+          position: static;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header>
+        <div class="eyebrow">TRY/JPY専用・日次複利対応</div>
+        <h1>トルコリラ円スワップ運用シミュレーター</h1>
+        <p class="lead">
+          TRY/JPYを保有した場合のスワップ損益、為替下落による評価損益、合計損益を概算します。
+          複利モードでは、毎日のスワップ収益を証拠金に加え、設定したレバレッジに合わせてTRY/JPYを買い増します。
+        </p>
+      </header>
+
+      <div class="layout">
+        <section class="panel inputs" aria-labelledby="input-title">
+          <h2 class="panel-title" id="input-title">入力</h2>
+          <div class="field-grid">
+            <label>
+              入金額（円）
+              <input id="deposit" type="number" min="1" step="10000" value="500000" />
+            </label>
+            <label>
+              レバレッジ（倍）
+              <input id="leverage" type="number" min="1" max="25" step="0.1" value="10" />
+            </label>
+            <label>
+              現在のTRY/JPY
+              <input id="rate" type="number" min="0.01" step="0.001" value="3.447" />
+            </label>
+            <label>
+              スワップポイント（1万通貨・1日あたり円）
+              <input id="swap" type="number" step="0.1" value="25" />
+            </label>
+            <label>
+              年間の為替下落率（%）
+              <input id="rateDrop" type="number" min="0" max="99" step="0.1" value="20" />
+            </label>
+            <label>
+              年間のスワップ低下率（%）
+              <input id="swapDrop" type="number" min="0" max="99" step="0.1" value="20" />
+            </label>
+            <label>
+              シミュレーション期間（年）
+              <input id="years" type="number" min="1" max="30" step="1" value="5" />
+            </label>
+            <label class="switch-row">
+              <span>
+                日次複利で買い増す
+                <small>毎日のスワップ収益を証拠金に加え、レバレッジ上限まで買い増します。</small>
+              </span>
+              <input id="compound" type="checkbox" checked />
+            </label>
+          </div>
+        </section>
+
+        <section class="main" aria-live="polite">
+          <div class="cards">
+            <article class="card">
+              <small>最終保有数量</small>
+              <div class="value" id="finalQty">-</div>
+            </article>
+            <article class="card">
+              <small>スワップ損益</small>
+              <div class="value profit" id="finalSwap">-</div>
+            </article>
+            <article class="card">
+              <small>評価損益</small>
+              <div class="value" id="finalValuation">-</div>
+            </article>
+            <article class="card">
+              <small>合計損益</small>
+              <div class="value" id="finalTotal">-</div>
+            </article>
+          </div>
+
+          <section class="panel chart-panel">
+            <h2 class="panel-title">損益グラフ</h2>
+            <p class="legend">
+              <span><i style="background: var(--loss)"></i>評価損益</span>
+              <span><i style="background: var(--profit)"></i>スワップ損益</span>
+              <span><i style="background: var(--total)"></i>合計損益</span>
+            </p>
+            <div class="chart-wrap">
+              <svg id="chart" role="img" aria-label="評価損益、スワップ損益、合計損益の推移グラフ"></svg>
+            </div>
+          </section>
+
+          <section class="panel table-panel">
+            <h2 class="panel-title">年ごとの結果</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>年</th>
+                    <th>TRY/JPY</th>
+                    <th>保有数量</th>
+                    <th>1日スワップ</th>
+                    <th>累計スワップ</th>
+                    <th>評価損益</th>
+                    <th>合計損益</th>
+                  </tr>
+                </thead>
+                <tbody id="yearRows"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel text-panel">
+            <h2 class="panel-title">計算方法</h2>
+            <ul class="note-list">
+              <li>TRY/JPYは、入力した年間下落率を日割りにして毎日下がる前提で計算しています。</li>
+              <li>スワップポイントも、入力した年間低下率を日割りにして毎日変化する前提です。</li>
+              <li>複利モードでは、毎日のスワップ収益を証拠金に追加し、入金額と累計スワップに対して設定レバレッジまで買い増します。</li>
+              <li>評価損益は、買付時の平均取得コストと現在評価額の差で計算しています。</li>
+              <li>税金、スプレッド、ロスカット、証拠金維持率、FX会社ごとのスワップ変更ルールは含めていません。</li>
+            </ul>
+          </section>
+        </section>
+      </div>
+
+      <footer>
+        このシミュレーターは概算用です。投資判断を保証するものではありません。
+      </footer>
+    </main>
+
+    <script>
+      const ids = ["deposit", "leverage", "rate", "swap", "rateDrop", "swapDrop", "years", "compound"];
+      const inputs = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
+      const outputs = {
+        finalQty: document.getElementById("finalQty"),
+        finalSwap: document.getElementById("finalSwap"),
+        finalValuation: document.getElementById("finalValuation"),
+        finalTotal: document.getElementById("finalTotal"),
+        yearRows: document.getElementById("yearRows"),
+        chart: document.getElementById("chart"),
+      };
+
+      const yen = new Intl.NumberFormat("ja-JP", {
+        style: "currency",
+        currency: "JPY",
+        maximumFractionDigits: 0,
+      });
+      const number = new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 0 });
+      const rateFmt = new Intl.NumberFormat("ja-JP", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+
+      function asNumber(input, fallback) {
+        const value = Number(input.value);
+        return Number.isFinite(value) ? value : fallback;
+      }
+
+      function classFor(value) {
+        if (value > 0) return "profit";
+        if (value < 0) return "loss";
+        return "neutral";
+      }
+
+      function simulate() {
+        const deposit = Math.max(1, asNumber(inputs.deposit, 500000));
+        const leverage = Math.max(1, asNumber(inputs.leverage, 10));
+        const initialRate = Math.max(0.001, asNumber(inputs.rate, 3.447));
+        const initialSwap = asNumber(inputs.swap, 25);
+        const rateDrop = Math.min(99, Math.max(0, asNumber(inputs.rateDrop, 20))) / 100;
+        const swapDrop = Math.min(99, Math.max(0, asNumber(inputs.swapDrop, 20))) / 100;
+        const years = Math.min(30, Math.max(1, Math.round(asNumber(inputs.years, 5))));
+        const compound = inputs.compound.checked;
+        const days = years * 365;
+        const dailyRateFactor = Math.pow(1 - rateDrop, 1 / 365);
+        const dailySwapFactor = Math.pow(1 - swapDrop, 1 / 365);
+
+        let rate = initialRate;
+        let dailySwapPoint = initialSwap;
+        let quantity = (deposit * leverage) / initialRate;
+        let totalCost = quantity * initialRate;
+        let cumulativeSwap = 0;
+        const series = [];
+        const snapshots = [];
+
+        for (let day = 1; day <= days; day += 1) {
+          rate *= dailyRateFactor;
+          dailySwapPoint *= dailySwapFactor;
+
+          const dailySwap = (quantity / 10000) * dailySwapPoint;
+          cumulativeSwap += dailySwap;
+
+          if (compound && cumulativeSwap > 0) {
+            const targetQuantity = ((deposit + cumulativeSwap) * leverage) / rate;
+            if (targetQuantity > quantity) {
+              const addedQuantity = targetQuantity - quantity;
+              quantity = targetQuantity;
+              totalCost += addedQuantity * rate;
+            }
+          }
+
+          const marketValue = quantity * rate;
+          const valuation = marketValue - totalCost;
+          const total = cumulativeSwap + valuation;
+          const point = {
+            day,
+            year: day / 365,
+            rate,
+            dailySwapPoint,
+            quantity,
+            cumulativeSwap,
+            valuation,
+            total,
+          };
+          series.push(point);
+          if (day % 365 === 0) snapshots.push(point);
+        }
+
+        return { series, snapshots };
+      }
+
+      function drawChart(series) {
+        const width = 940;
+        const height = 340;
+        const pad = { top: 24, right: 24, bottom: 42, left: 78 };
+        const values = series.flatMap((p) => [p.valuation, p.cumulativeSwap, p.total]);
+        let min = Math.min(0, ...values);
+        let max = Math.max(0, ...values);
+        if (min === max) {
+          min -= 1;
+          max += 1;
+        }
+        const range = max - min;
+        min -= range * 0.08;
+        max += range * 0.08;
+
+        const x = (year) => pad.left + (year / series[series.length - 1].year) * (width - pad.left - pad.right);
+        const y = (value) => pad.top + ((max - value) / (max - min)) * (height - pad.top - pad.bottom);
+        const path = (key) => series.map((p, i) => `${i === 0 ? "M" : "L"} ${x(p.year).toFixed(1)} ${y(p[key]).toFixed(1)}`).join(" ");
+        const zeroY = y(0);
+        const grid = [0, 0.25, 0.5, 0.75, 1]
+          .map((t) => {
+            const gy = pad.top + t * (height - pad.top - pad.bottom);
+            const value = max - t * (max - min);
+            return `<line x1="${pad.left}" y1="${gy}" x2="${width - pad.right}" y2="${gy}" stroke="#e2e8f0"/><text x="12" y="${gy + 4}" fill="#64748b" font-size="13">${yen.format(value)}</text>`;
+          })
+          .join("");
+        const yearMarks = series
+          .filter((p) => p.day % 365 === 0)
+          .map((p) => `<text x="${x(p.year)}" y="${height - 12}" text-anchor="middle" fill="#64748b" font-size="13">${Math.round(p.year)}年</text>`)
+          .join("");
+
+        outputs.chart.setAttribute("viewBox", `0 0 ${width} ${height}`);
+        outputs.chart.innerHTML = `
+          <rect width="${width}" height="${height}" fill="transparent"></rect>
+          ${grid}
+          <line x1="${pad.left}" y1="${zeroY}" x2="${width - pad.right}" y2="${zeroY}" stroke="#94a3b8" stroke-dasharray="5 5"/>
+          ${yearMarks}
+          <path d="${path("valuation")}" fill="none" stroke="#1d4ed8" stroke-width="3"/>
+          <path d="${path("cumulativeSwap")}" fill="none" stroke="#c2410c" stroke-width="3"/>
+          <path d="${path("total")}" fill="none" stroke="#0f766e" stroke-width="4"/>
+        `;
+      }
+
+      function render() {
+        const { series, snapshots } = simulate();
+        const last = series[series.length - 1];
+
+        outputs.finalQty.textContent = `${number.format(last.quantity)} TRY`;
+        outputs.finalSwap.textContent = yen.format(last.cumulativeSwap);
+        outputs.finalValuation.textContent = yen.format(last.valuation);
+        outputs.finalValuation.className = `value ${classFor(last.valuation)}`;
+        outputs.finalTotal.textContent = yen.format(last.total);
+        outputs.finalTotal.className = `value ${classFor(last.total)}`;
+
+        outputs.yearRows.innerHTML = snapshots
+          .map(
+            (p, index) => `
+              <tr>
+                <td>${index + 1}年目</td>
+                <td>${rateFmt.format(p.rate)}</td>
+                <td>${number.format(p.quantity)} TRY</td>
+                <td>${yen.format((p.quantity / 10000) * p.dailySwapPoint)}</td>
+                <td class="profit">${yen.format(p.cumulativeSwap)}</td>
+                <td class="${classFor(p.valuation)}">${yen.format(p.valuation)}</td>
+                <td class="${classFor(p.total)}">${yen.format(p.total)}</td>
+              </tr>
+            `,
+          )
+          .join("");
+
+        drawChart(series);
+      }
+
+      ids.forEach((id) => inputs[id].addEventListener("input", render));
+      render();
+    </script>
+  </body>
+</html>
