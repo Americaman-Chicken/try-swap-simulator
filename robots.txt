@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://try-swap-simulator-dfoj.vercel.app/sitemap.xml
