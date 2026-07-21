@@ -391,6 +391,123 @@
         }
       }
 
+      @media (max-width: 1024px), (hover: none) and (pointer: coarse) {
+        .page {
+          width: min(100% - 24px, 720px);
+          padding-top: 20px;
+        }
+
+        header {
+          margin-bottom: 18px;
+        }
+
+        h1 {
+          font-size: clamp(1.8rem, 8vw, 2.35rem);
+        }
+
+        .lead {
+          font-size: 0.95rem;
+        }
+
+        .layout,
+        .cards,
+        .content-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .main {
+          gap: 16px;
+        }
+
+        .inputs,
+        .card,
+        .chart-panel,
+        .table-panel,
+        .text-panel {
+          padding: 16px;
+        }
+
+        .inputs {
+          position: static;
+          max-height: none;
+          overflow: visible;
+        }
+
+        .cards {
+          gap: 10px;
+        }
+
+        .card {
+          min-height: auto;
+        }
+
+        .value {
+          font-size: 1.45rem;
+        }
+
+        .chart-wrap {
+          overflow: visible;
+        }
+
+        svg {
+          min-height: 420px;
+        }
+
+        .table-wrap {
+          overflow: visible;
+        }
+
+        table,
+        tbody,
+        tr,
+        td {
+          display: block;
+          width: 100%;
+          min-width: 0;
+        }
+
+        thead {
+          display: none;
+        }
+
+        tr {
+          border: 1px solid var(--line);
+          border-radius: 8px;
+          padding: 10px 12px;
+          background: #fff;
+        }
+
+        tr + tr {
+          margin-top: 10px;
+        }
+
+        td {
+          display: flex;
+          justify-content: space-between;
+          gap: 16px;
+          border-bottom: 1px solid #edf2f7;
+          padding: 8px 0;
+          text-align: right;
+          white-space: normal;
+        }
+
+        td:first-child {
+          color: var(--text);
+          font-weight: 900;
+        }
+
+        td:last-child {
+          border-bottom: 0;
+        }
+
+        td::before {
+          content: attr(data-label);
+          color: var(--muted);
+          font-weight: 700;
+          text-align: left;
+        }
+      }
+
       @media (max-width: 640px) {
         .page {
           width: min(100% - 24px, 1280px);
@@ -880,15 +997,15 @@
           .map(
             (p, index) => `
               <tr>
-                <td>${index + 1}年目</td>
-                <td>${rateFmt.format(p.rate)}</td>
-                <td>${number.format(p.quantity)} TRY</td>
-                <td>${Number.isFinite(p.effectiveLeverage) ? `${p.effectiveLeverage.toFixed(2)}倍` : "維持不可"}</td>
-                <td>${yen.format((p.quantity / 10000) * p.dailySwapPoint)}</td>
-                <td class="profit">${yen.format(p.cumulativeSwap)}</td>
-                <td class="fee">${yen.format(-p.cumulativeSpread)}</td>
-                <td class="${classFor(p.valuation)}">${yen.format(p.valuation)}</td>
-                <td class="${classFor(p.total)}">${yen.format(p.total)}</td>
+                <td data-label="年">${index + 1}年目</td>
+                <td data-label="TRY/JPY">${rateFmt.format(p.rate)}</td>
+                <td data-label="保有数量">${number.format(p.quantity)} TRY</td>
+                <td data-label="実効レバレッジ">${Number.isFinite(p.effectiveLeverage) ? `${p.effectiveLeverage.toFixed(2)}倍` : "維持不可"}</td>
+                <td data-label="1日スワップ">${yen.format((p.quantity / 10000) * p.dailySwapPoint)}</td>
+                <td data-label="累計スワップ" class="profit">${yen.format(p.cumulativeSwap)}</td>
+                <td data-label="スプレッド費用" class="fee">${yen.format(-p.cumulativeSpread)}</td>
+                <td data-label="評価損益" class="${classFor(p.valuation)}">${yen.format(p.valuation)}</td>
+                <td data-label="合計損益" class="${classFor(p.total)}">${yen.format(p.total)}</td>
               </tr>
             `,
           )
